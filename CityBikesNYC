@@ -1,0 +1,73 @@
+//Para esto deben de agregar el json.jar(http://central.maven.org/maven2/org/json/json/20131018/json-20131018.jar)
+//en las librerias del proyecto, en el proyecto de Netbeans click derecho en Libraries, add JAR/Folder y agregan el .jar.
+package maxbici;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.Authenticator;
+import java.net.MalformedURLException;
+import java.net.PasswordAuthentication;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.ArrayList;
+import org.json.*;
+
+/**
+ *
+ * @author mauricio
+ */
+public class CityBikeNYC {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        int maxbic = 0;//Iniciializo el maximo de bicis en 0.
+        ArrayList<Integer> numobj = new ArrayList<>();//Creo un arraylist de entero que contiene el identificador 
+                                                      //del objeto JSON con maxima cantidad de bicis.
+        try {
+            URL url = new URL("https://feeds.citibikenyc.com/stations/stations.json");//Creo un nuevo objeto URL.
+            URLConnection conexion = url.openConnection();//Abro la conexion a el URL anterior.
+            Authenticator autentif = new Authenticator() {//Autentifico la conexion ya que es https(codigo cntrl c - cntl v.
+                @Override
+                protected PasswordAuthentication
+                        getPasswordAuthentication() {
+                    return new PasswordAuthentication("usuario", "clave".toCharArray());
+                }
+            };
+            Authenticator.setDefault(autentif);
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(conexion.getInputStream()));//Obtengo los datos enviados a mi equipo ppor la conexion.
+            String pagina = "";//Inicializo el string pagina vacio.
+            String linea;//Inicializo el string linea vacio.
+            while ((linea = in.readLine()) != null) {//Mientras se reciban lineas distintas de null.
+                pagina = pagina + linea + "\n";//Guardo linea a linea el contenido de la pagina.
+            }
+            JSONObject jsonobj = new JSONObject(pagina);//Creo un objeto JSON, y le asigno el JSON contenido en la pagina.
+            String tiempoejec = jsonobj.getString("executionTime");//Obtengo el tiempo de ejecucion, valor otenido del JSON de la pagina.
+            System.out.println(tiempoejec);//Lo imprimo, esto es irrelebante, tanto obtenerlo como imprimirlo.
+            JSONArray Sbl = jsonobj.getJSONArray("stationBeanList");//Obtengo el array de JSON's stationBeanList, que contiene todas las estacones. 
+            for (int i = 0; i < Sbl.length(); i++) {//Recorro el array, todas las estaciones.
+                if (Sbl.getJSONObject(i).getInt("availableBikes") > maxbic) {//Si la cantidad de bicis disponibles de esa estacion es mayor que maxbic.
+                    maxbic = Sbl.getJSONObject(i).getInt("availableBikes");//Sobreescribo el maximo de bicis disponibles por una estacion.
+                    numobj.clear();//Elimino el/los identificadores de objetos del arraylist numobj.
+                    numobj.add(i);//Agrego el identificador del objeto(estacion) con mayor cantidad de bicis disponibles.
+                }else if (Sbl.getJSONObject(i).getInt("availableBikes") == maxbic){//Si la estacio tiene la misma cantidad de bicis disponibles.
+                        numobj.add(i);//Agrego el identificador del objeto al array que contiene la/s estaciones con esa cantidad de bicis disponibles.
+                    }
+                }
+            System.out.println("EL maximo de bici disponibles es :" + Sbl.getJSONObject(numobj.get(0)).getInt("availableBikes"));//Imprimo cuantas bicis dispone 
+                                                                                                                                 //la/s estacion/es.
+            for (int j : numobj) {//Recorro el array que contiene el/los identificado/res de la/s estaciones con mayor cantidad de bicis disponibles.
+                System.out.println("Id: " + Sbl.getJSONObject(j).getInt("id"));//Impirmo el id de la estacion.
+                System.out.println("Station name: " + Sbl.getJSONObject(j).getString("stationName"));//Imprimo su nombre.
+                System.out.println("LastCommunicationTime: " + Sbl.getJSONObject(j).getString("lastCommunicationTime"));//Imprimo la ultima vez que se actualizo.
+            }//En caso de varias estaciones con max cantidad de bicis disponibles imprimo 
+        } catch (MalformedURLException ex) {//Atrapo excepciones.
+            System.out.println("MalformedURL");
+        } catch (IOException ex) {
+            System.out.println("IOException");
+        }
+    }
+}
